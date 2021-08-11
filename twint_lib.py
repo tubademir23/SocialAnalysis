@@ -44,7 +44,7 @@ def get_replies(bas_tarih, bit_tarih, to):
 def get_tweets(bas_tarih, bit_tarih, username):
    
     twint.output.clean_lists
-    twint.output.tweets_list=[]
+    twint.storage.panda.Tweets_df=[]
     c = twint.Config()
     c.Username = username
     c.Since = bas_tarih
@@ -58,7 +58,7 @@ def get_tweets(bas_tarih, bit_tarih, username):
         os.remove(output_path)
     c.Output =output_path
     twint.run.Search(c)    
-    tweets = twint.output.tweets_list
+    tweets = twint.storage.panda.Tweets_df
     return tweets
 
 def get_hello():

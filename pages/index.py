@@ -13,6 +13,7 @@ from apps import vgames, global_sales,mainDash
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', dbc.themes.BOOTSTRAP]
 app.css.append_css({"external_url": external_stylesheets})
+
 navbar = dbc.NavbarSimple(
     children=[
         dbc.NavItem(dbc.NavLink('Anasayfa ', href='./index',external_link=True)),
@@ -51,4 +52,4 @@ def display_page(pathname):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, threaded=True)
