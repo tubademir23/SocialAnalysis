@@ -74,17 +74,10 @@ graphsLayout=html.Div([
         ], width=4),
     ],className='mb-2')
 ])
-filterLayout=dbc.Row([
+filterLayout=html.Div([dbc.Row([
         dbc.Col([
-            dbc.Card([
-                dbc.CardBody([
-                    html.Div([
-                        dbc.CardImg(src='/assets/logo.png') # 150px by 45px
-                    ],className='mb-2')
             
-                ])
-            ]),
-        ], width=2),
+        ], width=1),
 
         dbc.Col([
             dbc.Card([
@@ -151,8 +144,17 @@ filterLayout=dbc.Row([
             ])
         ], width=2),
     ],className='mb-2 mt-2'),
+    dbc.Row([
+        dbc.Col([dbc.Card([
+                dbc.CardBody([                    
+                        html.Div([    ]) ])])], width=12)],className='mb-2 mt-2'),
+])
 
-summaryLayout=dbc.Row([
+summaryLayout=html.Div([
+dbc.Row([
+        dbc.Col([
+            
+        ], width=1),
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader("Takipçi Bilgileri"),
@@ -177,14 +179,22 @@ summaryLayout=dbc.Row([
                 ]),
             ], style={'textAlign':'center'}),
         ], width=2),
-         dbc.Col([
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader("Tweets"),
+                
+                dbc.Row([
+                    dbc.Col([
                         dbc.Card([
-                            dbc.CardHeader("Tweets"),
+                            dbc.CardHeader("___"),
                             dbc.CardBody([
                                 html.H2(id='tweets', children="000")
                             ], style={'textAlign':'center'})
                         ]),
-                    ], width=2),
+                    ], width=12),
+                ]),
+            ], style={'textAlign':'center'}),
+        ], width=2),
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader("Etkileşim Bilgileri"),
@@ -208,7 +218,7 @@ summaryLayout=dbc.Row([
                     ], width=3),
                     dbc.Col([
                         dbc.Card([
-                            dbc.CardHeader("Cevap"),
+                            dbc.CardHeader("Alıntı"),
                             dbc.CardBody([
                                 html.H2(id='replies', children="000")
                             ], style={'textAlign':'center'})
@@ -226,26 +236,82 @@ summaryLayout=dbc.Row([
             ], style={'textAlign':'center'}),
             
         ], width=4),
-    ],className='mb-2')
+    ],className='mb-2')])
 
-tabsLayout=dbc.Row([
-            dbc.Col(
-                dbc.Container(
-                [
-                    dbc.Tabs(
-                            [
-                                dbc.Tab(label="Tweets", tab_id="tweets"),
-                                dbc.Tab(label="Replies", tab_id="replies"),
-                                
-                            ],
-                            id="tabs",
-                            active_tab="tweets",
-                        ),
-                        html.Div(id="tab-content", className="p-4")
-                ]), width=12
-            )
-        ])
+tabsLayout=html.Div([
+    dbc.Row([
+        dbc.Col(
+            dbc.Card([
+                dbc.CardBody([
+                    html.Div([
+                        dbc.Container(
+                        [
+                            dbc.Tabs(
+                                    [
+                                        dbc.Tab(label="Tweetler", tab_id="tweets"),
+                                        dbc.Tab(label="Alıntılar", tab_id="replies"),
+                                        
+                                    ],
+                                    id="tabs",
+                                    active_tab="tweets",
+                                ),
+                                html.Div(id="tab-content")
+                        ])
+                    ])
+                ])
+            ])
+             , width=12
+        )],
+)
+])
 
+tab1_content = dbc.Card(
+    dbc.CardBody(
+        [
+            html.P("This is tab 1!", className="card-text"),
+            dbc.Button("Click here", color="success"),
+        ]
+    ),
+    className="mt-3",
+)
+
+tab2_content = dbc.Card(
+    dbc.CardBody(
+        [
+            html.P("This is tab 2!", className="card-text"),
+            dbc.Button("Don't click here", color="danger"),
+        ]
+    ),
+    className="mt-3",
+)
+tabs = html.Div([
+    dbc.Row([
+        
+        dbc.Col(
+            dbc.Card([
+                dbc.CardBody([
+                    html.Div([
+                        dbc.Container(
+                        [
+                            
+                            dbc.Tabs(
+                                [
+                                    dbc.Tab(tab1_content, label="Tab 1"),
+                                    dbc.Tab(tab2_content, label="Tab 2"),
+                                    dbc.Tab(
+                                        "This tab's content is never seen", label="Tab 3", disabled=True
+                                    ),
+                                ]
+                            ),
+                                html.Div(id="tab-content2")
+                        ])
+                    ])
+                ])
+            ])
+             , width=12
+        )],
+     )
+])
 def show_tweet(link):
     '''Display the contents of a tweet. '''
     url = 'https://publish.twitter.com/oembed?url=%s' % link
@@ -265,6 +331,7 @@ def get_replies_df(to, bas_tarih, bit_tarih):
 
 
 layout = html.Div([
+    html.Div(tabs),
     html.Div(filterLayout),
     html.Div(summaryLayout),
     html.Div(tabsLayout),
