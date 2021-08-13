@@ -33,6 +33,10 @@ app.css.append_css({"external_url": external_stylesheets})
 """
 reply_list=["DiyanetTV","DikenComTr","gazetesozcu", "diyanethbr","memurlarnet", "tgrthabertv", "TwiterSonSakika","vatan","stargazete","timeturk","hurhaber1","habervakti"]
 username_list= ["Diyanet","DiyanetTV","DR_FatihKurt"]
+empty_col=dbc.Col([
+            
+        ], width=1)
+
 graphsLayout=html.Div([
     dbc.Row([
         dbc.Col([
@@ -75,9 +79,7 @@ graphsLayout=html.Div([
     ],className='mb-2')
 ])
 filterLayout=html.Div([dbc.Row([
-        dbc.Col([
-            
-        ], width=1),
+        empty_col,
 
         dbc.Col([
             dbc.Card([
@@ -111,15 +113,15 @@ filterLayout=html.Div([dbc.Row([
                     html.Div([
                         # Select Division Dropdown
                         html.Div([
-                            html.Div('Kullanıcı Seçin', className='three columns'),
-                            html.Div(dcc.Dropdown(id='kullanici-selector',
+                            html.Div('Kullanıcı', className='three columns'),
+                            html.Div(dcc.Dropdown(id='username-selector',
                                                 options=[{'label':opt, 'value':opt} for opt in username_list], value="DiyanetTV"),
                                     className='nine columns')
                         ]),
 
                         # Select Season Dropdown
                         html.Div([
-                            html.Div('Reply Hesap Seçin', className='three columns'),
+                            html.Div('Alıntı Hesap', className='three columns'),
                             html.Div(dcc.Dropdown(id='reply-selector', 
                             options=[{'label':opt, 'value':opt} for opt in reply_list], placeholder="Seçiniz", multi=True),
                                     className='nine columns')
@@ -152,9 +154,7 @@ filterLayout=html.Div([dbc.Row([
 
 summaryLayout=html.Div([
 dbc.Row([
-        dbc.Col([
-            
-        ], width=1),
+        empty_col,
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader("Takipçi Bilgileri"),
@@ -238,15 +238,9 @@ dbc.Row([
         ], width=4),
     ],className='mb-2')])
 
-tabsLayout=html.Div([
-    dbc.Row([
-        dbc.Col(
-            dbc.Card([
-                dbc.CardBody([
-                    html.Div([
-                        dbc.Container(
-                        [
-                            dbc.Tabs(
+tabsLayout=html.Div([dbc.Row([
+        empty_col,
+        dbc.Col([dbc.Tabs(
                                     [
                                         dbc.Tab(label="Tweetler", tab_id="tweets"),
                                         dbc.Tab(label="Alıntılar", tab_id="replies"),
@@ -256,62 +250,9 @@ tabsLayout=html.Div([
                                     active_tab="tweets",
                                 ),
                                 html.Div(id="tab-content")
-                        ])
-                    ])
-                ])
-            ])
-             , width=12
-        )],
-)
-])
+                        ], width=6)
+                    ],className='mb-2')])
 
-tab1_content = dbc.Card(
-    dbc.CardBody(
-        [
-            html.P("This is tab 1!", className="card-text"),
-            dbc.Button("Click here", color="success"),
-        ]
-    ),
-    className="mt-3",
-)
-
-tab2_content = dbc.Card(
-    dbc.CardBody(
-        [
-            html.P("This is tab 2!", className="card-text"),
-            dbc.Button("Don't click here", color="danger"),
-        ]
-    ),
-    className="mt-3",
-)
-tabs = html.Div([
-    dbc.Row([
-        
-        dbc.Col(
-            dbc.Card([
-                dbc.CardBody([
-                    html.Div([
-                        dbc.Container(
-                        [
-                            
-                            dbc.Tabs(
-                                [
-                                    dbc.Tab(tab1_content, label="Tab 1"),
-                                    dbc.Tab(tab2_content, label="Tab 2"),
-                                    dbc.Tab(
-                                        "This tab's content is never seen", label="Tab 3", disabled=True
-                                    ),
-                                ]
-                            ),
-                                html.Div(id="tab-content2")
-                        ])
-                    ])
-                ])
-            ])
-             , width=12
-        )],
-     )
-])
 def show_tweet(link):
     '''Display the contents of a tweet. '''
     url = 'https://publish.twitter.com/oembed?url=%s' % link
@@ -331,7 +272,6 @@ def get_replies_df(to, bas_tarih, bit_tarih):
 
 
 layout = html.Div([
-    html.Div(tabs),
     html.Div(filterLayout),
     html.Div(summaryLayout),
     html.Div(tabsLayout),
@@ -351,48 +291,36 @@ layout = html.Div([
     [Input('btnYenile', 'n_clicks')],
     [State('basTarih','date'),
     State('bitTarih','date'),
-    State('kullanici-selector', 'value'),
+    State('username-selector', 'value'),
     State('reply-selector', 'value'),
     State('hashtag', 'value')]
 )
     #,bas_tarih, bit_tarih
 
-def update_dash(n_clicks,bas_tarih, bit_tarih, kullanici, reply, hashtag):
+def update_dash(n_clicks,bas_tarih, bit_tarih, username, reply, hashtag):
     date_object = date.fromisoformat(bas_tarih)
     date_bas= date_object.strftime('%B %d, %Y')
 
     date_object = date.fromisoformat(bit_tarih)
     date_bit= date_object.strftime('%B %d, %Y')
 
-    print("yenileye girdim {} - {} - {} / @{}, @{}, H: {}".format(n_clicks,date_bas, date_bit,kullanici, reply, hashtag))
+    print("States: {} - {} - {} / @{}, @{}, H: {}".format(n_clicks,date_bas, date_bit,username, reply, hashtag))
     
-    dic_follow=get_followers_following(kullanici)
+    dic_follow=get_followers_following(username)
     (followers_num, followings_num)=(dic_follow["followers"], dic_follow["following"])
     nest_asyncio.apply()
     # replies
-    df_replies= get_replies(bas_tarih, bit_tarih,kullanici)
+    df_replies= get_replies(bas_tarih, bit_tarih,username)
     replies_num = len(df_replies)
     # tweets
     nest_asyncio.apply()
-    df_list= get_tweets(bas_tarih, bit_tarih,kullanici)
+    df_list= get_tweets(bas_tarih, bit_tarih,username)
     tweets_num = len(df_list)
 
     df_tweets = pd.DataFrame(df_list)
     
-    print(type(df_tweets), df_tweets.head())
-    for tw in df_tweets['nlikes'].head():
-        print(tw, type(tw))
-    
-    #rt_links = df_tweets.sort_values(by= 'nreplies', ascending = False)['link'].values
-    
-    
-
-    #,retweets_count,likes_count
     (likes_num,replies_num, retweets_num) = (sum(df_tweets['nlikes']), sum(df_tweets['nreplies']),sum(df_tweets['nretweets']))
     totals_num=likes_num+replies_num+ retweets_num
-    print(followers_num, followings_num, replies_num, tweets_num, likes_num)
-    #data['tweets']=df_tweets
-    #data['replies']=df_replies
     print("çıkıştayım")
     return followers_num, followings_num, tweets_num, likes_num, replies_num, retweets_num, totals_num
     
@@ -404,10 +332,10 @@ def update_dash(n_clicks,bas_tarih, bit_tarih, kullanici, reply, hashtag):
     [Input("tabs", "active_tab")],
     [State('basTarih','date'),
     State('bitTarih','date'),
-    State('kullanici-selector', 'value'),
+    State('username-selector', 'value'),
     State('reply-selector', 'value')]
 )
-def render_tab_content(active_tab, bas_tarih, bit_tarih, kullanici, to):
+def render_tab_content(active_tab, bas_tarih, bit_tarih, username, to):
     """
     This callback takes the 'active_tab' property as input, as well as the
     stored graphs, and renders the tab content depending on what the value of
@@ -420,7 +348,7 @@ def render_tab_content(active_tab, bas_tarih, bit_tarih, kullanici, to):
                 df_replies= get_replies_df(to, bas_tarih, bit_tarih)
                 return dcc.Graph(figure=df_replies["scatter"])
             elif active_tab == "tweets":
-                df_tweets= get_tweets_df(kullanici, bas_tarih, bit_tarih)
+                df_tweets= get_tweets_df(username, bas_tarih, bit_tarih)
                 return dash_table.DataTable(
                     id='table',
                     columns=[{"name": i, "id": i} for i in df_tweets.columns],
