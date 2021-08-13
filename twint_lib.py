@@ -53,7 +53,7 @@ def get_tweets(bas_tarih, bit_tarih, username):
     c.Store_object = True
     c.Store_csv = True
     c.Pandas=True
-    output_path= DATA_PATH+"\{} {}_{}.csv".format(username, bas_tarih, bit_tarih)
+    output_path= DATA_PATH+"\Tweets {} {}_{}.csv".format(username, bas_tarih, bit_tarih)
     if os.path.exists(output_path):
         os.remove(output_path)
     c.Output =output_path

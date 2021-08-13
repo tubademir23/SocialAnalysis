@@ -4,7 +4,8 @@ import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Output, Input, State
 import dash
-import dash_bootstrap_components as dbc  # pip install dash-bootstrap-components
+import dash_bootstrap_components as dbc
+from numpy import dtype  # pip install dash-bootstrap-components
 import plotly.express as px              # pip install plotly
 import pandas as pd                      # pip install pandas
 from datetime import datetime, timedelta
@@ -19,7 +20,8 @@ import nest_asyncio
 import dash_table
 from IPython.display import HTML, display
 import requests
-
+import os.path
+import glob
 # csv oku **************************************
 DATA_PATH=os.path.abspath('data')
 df_cnt = pd.read_csv(DATA_PATH+"\DiyanetTV.csv")
@@ -33,6 +35,38 @@ app.css.append_css({"external_url": external_stylesheets})
 """
 reply_list=["DiyanetTV","DikenComTr","gazetesozcu", "diyanethbr","memurlarnet", "tgrthabertv", "TwiterSonSakika","vatan","stargazete","timeturk","hurhaber1","habervakti"]
 username_list= ["Diyanet","DiyanetTV","DR_FatihKurt"]
+
+def fn_datatable(_data, _columns, id_):
+    #print(_columns)
+    return html.Div([
+        dash_table.DataTable(
+            id=id_,
+            data=_data,
+            columns=[
+                {"name": i, "id": i, "deletable": False, "selectable": False} for i in _columns
+            ],
+            editable=False,
+            filter_action="native",
+            sort_action="native",
+            sort_mode="multi",
+            row_selectable="multi",
+            row_deletable=False,
+            selected_rows=[],
+            page_action="native",
+            page_current= 0,
+            page_size= 6,
+            # page_action='none',
+            # style_cell={
+            # 'whiteSpace': 'normal'
+            # },
+            # fixed_rows={ 'headers': True, 'data': 0 },
+            # virtualization=False,
+            style_cell_conditional=[
+                {'if': {'column_id': 'username'},
+                 'width': '40%', 'textAlign': 'left'}
+            ],
+        ),
+    ],className='row')
 empty_col=dbc.Col([
             
         ], width=1)
@@ -243,8 +277,9 @@ tabsLayout=html.Div([dbc.Row([
         dbc.Col([dbc.Tabs(
                                     [
                                         dbc.Tab(label="Tweetler", tab_id="tweets"),
-                                        dbc.Tab(label="Alıntılar", tab_id="replies"),
-                                        
+                                        dbc.Tab(label="Alıntılar",tab_id="replies"),
+                                        dbc.Tab(label="Mentions", tab_id="mentions"),
+                                        dbc.Tab(label="Hashtags", tab_id="hashtags"),
                                     ],
                                     id="tabs",
                                     active_tab="tweets",
@@ -252,6 +287,19 @@ tabsLayout=html.Div([dbc.Row([
                                 html.Div(id="tab-content")
                         ], width=6)
                     ],className='mb-2')])
+
+def get_bestFile(start_suffix,bas_tarih, bit_tarih, suffix):
+    for file in os.listdir(DATA_PATH):
+        if file.endswith(suffix) and file.startswith(start_suffix):
+            name=os.path.splitext(file)
+            (sf_bas_tarih, sf_bit_tarih)= name[0].split()[2].split("_")
+            if sf_bas_tarih<=bas_tarih and sf_bit_tarih>= bit_tarih:
+                return file
+    
+def get_newestFile(start_suffix, suffix):
+    files = glob.glob(DATA_PATH+"\*"+start_suffix+"*"+ suffix)
+    max_file = max(files, key=os.path.getctime)         
+    return max_file
 
 def show_tweet(link):
     '''Display the contents of a tweet. '''
@@ -261,15 +309,38 @@ def show_tweet(link):
     display(HTML(html))
 
 def get_tweets_df(username, bas_tarih, bit_tarih):
-    output_path=DATA_PATH+"\{} {}_{}.csv".format(username, bas_tarih, bit_tarih)
-    df_tweets= pd.read_csv(output_path)
+    file= get_newestFile("Tweets","csv")
+    df_tweets= pd.read_csv(file)
     return df_tweets
 
 def get_replies_df(to, bas_tarih, bit_tarih):
-    output_path=DATA_PATH+"\Replies {} {}_{}.csv".format(to, bas_tarih, bit_tarih)
-    df_replies= pd.read_csv(output_path)
+    file= get_newestFile("Replies","csv")
+    df_replies= pd.read_csv(file)
     return df_replies
 
+def get_hashtags_df(username, bas_tarih, bit_tarih):
+    import ast
+    hashtags={}
+    tweets=get_tweets_df(username, bas_tarih, bit_tarih)
+    df_hash_tweets= pd.DataFrame(tweets)
+    df_hashcount=[]
+    for index, t in df_hash_tweets.iterrows(): 
+       for h in ast.literal_eval(t["hashtags"]):
+            if(t["username"] in hashtags):
+                if(h in hashtags[t.username]):
+                    hashtags[t.username][h] += 1
+                else:
+                    hashtags[t.username][h]=1
+            else:
+                hashtags[t.username]={h:1}
+    
+    for user in hashtags:
+        for h in hashtags[user]:
+            df_hashcount.append([user, h, hashtags[user][h]])
+    print(df_hashcount)
+    return pd.DataFrame(df_hashcount, columns=["username","hashtag","count"])
+    
+    #return pd.DataFrame(hashtags, columns=["username,hashtag,count"])
 
 layout = html.Div([
     html.Div(filterLayout),
@@ -321,7 +392,7 @@ def update_dash(n_clicks,bas_tarih, bit_tarih, username, reply, hashtag):
     
     (likes_num,replies_num, retweets_num) = (sum(df_tweets['nlikes']), sum(df_tweets['nreplies']),sum(df_tweets['nretweets']))
     totals_num=likes_num+replies_num+ retweets_num
-    print("çıkıştayım")
+    print("return")
     return followers_num, followings_num, tweets_num, likes_num, replies_num, retweets_num, totals_num
     
     #return 'The input "{}" , clicked {} times'.format(value,n_clicks), followers_num, followings_num,5+n_clicks,6+n_clicks,7+n_clicks
@@ -336,22 +407,20 @@ def update_dash(n_clicks,bas_tarih, bit_tarih, username, reply, hashtag):
     State('reply-selector', 'value')]
 )
 def render_tab_content(active_tab, bas_tarih, bit_tarih, username, to):
-    """
-    This callback takes the 'active_tab' property as input, as well as the
-    stored graphs, and renders the tab content depending on what the value of
-    'active_tab' is.
-    """
-    print("içerideyim")
+  
+    print("içerideyim", active_tab)
     
     if active_tab:
             if active_tab == "replies":
-                df_replies= get_replies_df(to, bas_tarih, bit_tarih)
-                return dcc.Graph(figure=df_replies["scatter"])
+                df_replies= get_replies_df(username, bas_tarih, bit_tarih)
+                return fn_datatable(df_replies.to_dict('records'), df_replies.columns, 'table')
             elif active_tab == "tweets":
                 df_tweets= get_tweets_df(username, bas_tarih, bit_tarih)
-                return dash_table.DataTable(
-                    id='table',
-                    columns=[{"name": i, "id": i} for i in df_tweets.columns],
-                    data=df_tweets.to_dict('records'),
-                )
-    "No tab selected"
+                return fn_datatable(df_tweets.to_dict('records'), df_tweets.columns, 'table')
+            elif active_tab == "mentions":
+                df_tweets= get_tweets_df(username, bas_tarih, bit_tarih)
+                return fn_datatable(df_tweets.to_dict('records'), df_tweets.columns, 'table')
+            elif active_tab == "hashtags":
+                dic_hashtags= get_hashtags_df(username, bas_tarih, bit_tarih)
+                return fn_datatable(dic_hashtags.to_dict('records'), dic_hashtags.columns, 'table')
+    return "No tab selected"
