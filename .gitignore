@@ -1,9 +1,7 @@
-./pages/datasets
-./data
-./__pycache__
-./DiyanetTV
-./pages/apps/global_sales.py
-./pages/apps/vgames.py
-./dash
-
-
+/data
+/DiyanetTV
+/dash
+/pages/__pycache__
+/pages/apps/global_sales
+/pages/apps/vgames
+/__pycache__
