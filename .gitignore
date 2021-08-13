@@ -1,0 +1,9 @@
+./pages/datasets
+./data
+./__pycache__
+./DiyanetTV
+./pages/apps/global_sales.py
+./pages/apps/vgames.py
+./dash
+
+
