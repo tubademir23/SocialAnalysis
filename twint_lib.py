@@ -60,6 +60,3 @@ def get_tweets(bas_tarih, bit_tarih, username):
     twint.run.Search(c)    
     tweets = twint.storage.panda.Tweets_df
     return tweets
-
-def get_hello():
-    return "hi"

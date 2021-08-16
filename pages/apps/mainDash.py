@@ -1,4 +1,5 @@
 
+from threading import local
 from dash_bootstrap_components._components.Row import Row
 import dash_html_components as html
 import dash_core_components as dcc
@@ -22,19 +23,13 @@ from IPython.display import HTML, display
 import requests
 import os.path
 import glob
+from collections import Counter
 # csv oku **************************************
 DATA_PATH=os.path.abspath('data')
-df_cnt = pd.read_csv(DATA_PATH+"\DiyanetTV.csv")
-df_cnt["date"] = pd.to_datetime(df_cnt["date"])
-df_cnt["day"] = df_cnt["date"].dt.day
-df_cnt["month"] = df_cnt["date"].dt.month
 
-"""
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', dbc.themes.BOOTSTRAP]
-app.css.append_css({"external_url": external_stylesheets})
-"""
-reply_list=["DiyanetTV","DikenComTr","gazetesozcu", "diyanethbr","memurlarnet", "tgrthabertv", "TwiterSonSakika","vatan","stargazete","timeturk","hurhaber1","habervakti"]
+reply_list=["DiyanetTV","dibalierbas","DikenComTr","gazetesozcu", "diyanethbr","memurlarnet", "tgrthabertv", "TwiterSonSakika","vatan","stargazete","timeturk","hurhaber1","habervakti"]
 username_list= ["Diyanet","DiyanetTV","DR_FatihKurt"]
+
 
 def fn_datatable(_data, _columns, id_):
     #print(_columns)
@@ -49,22 +44,17 @@ def fn_datatable(_data, _columns, id_):
             filter_action="native",
             sort_action="native",
             sort_mode="multi",
-            row_selectable="multi",
+            #row_selectable="multi",
             row_deletable=False,
             selected_rows=[],
             page_action="native",
             page_current= 0,
-            page_size= 6,
-            # page_action='none',
-            # style_cell={
-            # 'whiteSpace': 'normal'
-            # },
-            # fixed_rows={ 'headers': True, 'data': 0 },
-            # virtualization=False,
-            style_cell_conditional=[
-                {'if': {'column_id': 'username'},
-                 'width': '40%', 'textAlign': 'left'}
-            ],
+            page_size= 15,
+             style_cell_conditional=[
+            {
+                'if': {'column_id': c},
+                'textAlign': 'left'
+            } for c in ['tweet', 'mentions','username',"Adı","hashtags"]]
         ),
     ],className='row')
 empty_col=dbc.Col([
@@ -124,9 +114,13 @@ filterLayout=html.Div([dbc.Row([
                             html.Div([
                                 dcc.DatePickerSingle(
                                     id='basTarih',
-                                    date=datetime.today().date() - timedelta(days=15),
-                                    className='ml-5'
+                                    display_format='D/M/Y',
+                                    placeholder='D/M/Y',
+                                    date=datetime.today().date() - timedelta(days=30),
+                                    className='ml-5',
                                 ),dcc.DatePickerSingle(
+                                    display_format='D/M/Y',
+                                    placeholder='D/M/Y',
                                     id='bitTarih',
                                     date=datetime.today().date(),
                                     className='mb-2 ml-2'
@@ -137,7 +131,7 @@ filterLayout=html.Div([dbc.Row([
                             html.Div('Hashtag', className='three columns'),
                             html.Div(dcc.Input(id="hashtag", type="text", placeholder="",className='ml-5'),className='nine columns')
                         ]),
-                    ]),
+                    ], lang="tr"),
                 ])
             ],  color="light"),
         ], width=3), 
@@ -201,7 +195,7 @@ dbc.Row([
                                 html.H2(id='followers', children="000")
                             ], style={'textAlign':'center'})
                         ]),
-                    ], width=6),
+                    ], width=8),
                     dbc.Col([
                         dbc.Card([
                             dbc.CardHeader("Takip Edilen"),
@@ -209,10 +203,10 @@ dbc.Row([
                                 html.H2(id='followings', children="000")
                             ], style={'textAlign':'center'})
                         ]),
-                    ], width=6),
+                    ], width=4),
                 ]),
             ], style={'textAlign':'center'}),
-        ], width=2),
+        ], width=3),
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader("Tweets"),
@@ -257,7 +251,7 @@ dbc.Row([
                                 html.H2(id='replies', children="000")
                             ], style={'textAlign':'center'})
                         ]),
-                    ], width=3),
+                    ], width=2),
                     dbc.Col([
                         dbc.Card([
                             dbc.CardHeader("Toplam Etkileşim"),
@@ -265,11 +259,11 @@ dbc.Row([
                                 html.H2(id='totals', children="000")
                             ], style={'textAlign':'center'})
                         ]),
-                    ], width=3),
+                    ], width=4),
                 ]),
             ], style={'textAlign':'center'}),
             
-        ], width=4),
+        ], width=5),
     ],className='mb-2')])
 
 tabsLayout=html.Div([dbc.Row([
@@ -278,6 +272,7 @@ tabsLayout=html.Div([dbc.Row([
                                     [
                                         dbc.Tab(label="Tweetler", tab_id="tweets"),
                                         dbc.Tab(label="Alıntılar",tab_id="replies"),
+                                        #dbc.Tab(label="Alıntılayanlar",tab_id="repliesUsers"),
                                         dbc.Tab(label="Mentions", tab_id="mentions"),
                                         dbc.Tab(label="Hashtags", tab_id="hashtags"),
                                     ],
@@ -287,7 +282,7 @@ tabsLayout=html.Div([dbc.Row([
                                 html.Div(id="tab-content")
                         ], width=6)
                     ],className='mb-2')])
-
+xstr = lambda s: s or ""
 def get_bestFile(start_suffix,bas_tarih, bit_tarih, suffix):
     for file in os.listdir(DATA_PATH):
         if file.endswith(suffix) and file.startswith(start_suffix):
@@ -308,20 +303,54 @@ def show_tweet(link):
     html = response.json()["html"]
     display(HTML(html))
 
-def get_tweets_df(username, bas_tarih, bit_tarih):
+def get_tweets_df(username, bas_tarih, bit_tarih,to,text):
     file= get_newestFile("Tweets","csv")
     df_tweets= pd.read_csv(file)
-    return df_tweets
+ 
+    print("3: ",len(df_tweets[df_tweets["username"]==username]))
+ 
+    df_filter= df_tweets[df_tweets.tweet.str.contains(text,case=False)  ]
+    return df_filter
 
-def get_replies_df(to, bas_tarih, bit_tarih):
+def get_replies_df(username, bas_tarih, bit_tarih,to,text):
     file= get_newestFile("Replies","csv")
     df_replies= pd.read_csv(file)
-    return df_replies
 
-def get_hashtags_df(username, bas_tarih, bit_tarih):
+    df_replies= df_replies[df_replies.username.str.contains('|'.join(to))]
+    
+    df_filter= df_replies[df_replies.tweet.str.contains(text,case=False) ]
+
+    return df_filter
+
+
+def get_repliesUsers_df(username, bas_tarih, bit_tarih,to,text):
+    df=get_replies_df(username, bas_tarih, bit_tarih,to,text)
+    Replies = {x:y for x,y in zip(df['conversation_id'],df['replies_count'])}
+    fetchedReplies =Counter(df['conversation_id'])
+    df_repliesUsersCount=[]
+    for tweet in Replies:
+        df_repliesUsersCount.append([Replies[tweet],fetchedReplies[tweet]])
+
+    return pd.DataFrame(df_repliesUsersCount, columns=["adı","count"])
+
+def get_mentions_df(username, bas_tarih, bit_tarih, to,text):
+    import ast
+    mentions={}
+    tweets=get_tweets_df(username, bas_tarih, bit_tarih, to,text)
+    df_mentions_tweets= pd.DataFrame(tweets)
+    for index, t in df_mentions_tweets.iterrows(): 
+        for m in ast.literal_eval(t["mentions"]):
+            if(m['screen_name'] in mentions):
+                mentions[m['screen_name']]+=1
+            else:
+                mentions[m['screen_name']]=1
+    mentions_df= pd.DataFrame(mentions.items(), columns=['Adı', 'Sayısı'])
+    return mentions_df
+
+def get_hashtags_df(username, bas_tarih, bit_tarih, to,text):
     import ast
     hashtags={}
-    tweets=get_tweets_df(username, bas_tarih, bit_tarih)
+    tweets=get_tweets_df(username, bas_tarih, bit_tarih, to,text)
     df_hash_tweets= pd.DataFrame(tweets)
     df_hashcount=[]
     for index, t in df_hash_tweets.iterrows(): 
@@ -337,17 +366,16 @@ def get_hashtags_df(username, bas_tarih, bit_tarih):
     for user in hashtags:
         for h in hashtags[user]:
             df_hashcount.append([user, h, hashtags[user][h]])
-    print(df_hashcount)
-    return pd.DataFrame(df_hashcount, columns=["username","hashtag","count"])
     
-    #return pd.DataFrame(hashtags, columns=["username,hashtag,count"])
+    return pd.DataFrame(df_hashcount, columns=["Adı","Hashtag","Sayısı"])
+ 
 
 layout = html.Div([
     html.Div(filterLayout),
     html.Div(summaryLayout),
     html.Div(tabsLayout),
 
-    html.Div(graphsLayout)
+    #html.Div(graphsLayout)
 ]#, fluid=True
 )
 
@@ -397,30 +425,28 @@ def update_dash(n_clicks,bas_tarih, bit_tarih, username, reply, hashtag):
     
     #return 'The input "{}" , clicked {} times'.format(value,n_clicks), followers_num, followings_num,5+n_clicks,6+n_clicks,7+n_clicks
 
+get_method_dict={"replies":get_replies_df,"repliesUsers":get_repliesUsers_df, "tweets":get_tweets_df,"mentions":get_mentions_df, "hashtags":get_hashtags_df}
+get_column_dict={"replies":["username","tweet", "date", "link","conversion_id", "hashtags","mentions"],
+                "repliesUsers":["Adı","Hashtag","Sayısı"], 
+                "tweets":["tweet", "date", "link","conversion_id", "hashtags","mentions"],
+                "mentions":["Adı","Sayısı"], "hashtags":["Adı","Hashtag","Sayısı"]}
 
 @app.callback(
     Output("tab-content", "children"),
-    [Input("tabs", "active_tab")],
+    [Input("tabs", "active_tab"),
+    Input('hashtag', 'value'),
+    Input('reply-selector', 'value')],
     [State('basTarih','date'),
     State('bitTarih','date'),
-    State('username-selector', 'value'),
-    State('reply-selector', 'value')]
+    State('username-selector', 'value')
+    ]
 )
-def render_tab_content(active_tab, bas_tarih, bit_tarih, username, to):
-  
+def render_tab_content(active_tab, text, to, bas_tarih, bit_tarih, username):
+      
     print("içerideyim", active_tab)
     
     if active_tab:
-            if active_tab == "replies":
-                df_replies= get_replies_df(username, bas_tarih, bit_tarih)
-                return fn_datatable(df_replies.to_dict('records'), df_replies.columns, 'table')
-            elif active_tab == "tweets":
-                df_tweets= get_tweets_df(username, bas_tarih, bit_tarih)
-                return fn_datatable(df_tweets.to_dict('records'), df_tweets.columns, 'table')
-            elif active_tab == "mentions":
-                df_tweets= get_tweets_df(username, bas_tarih, bit_tarih)
-                return fn_datatable(df_tweets.to_dict('records'), df_tweets.columns, 'table')
-            elif active_tab == "hashtags":
-                dic_hashtags= get_hashtags_df(username, bas_tarih, bit_tarih)
-                return fn_datatable(dic_hashtags.to_dict('records'), dic_hashtags.columns, 'table')
-    return "No tab selected"
+        run=get_method_dict[active_tab]
+        df=run(username, bas_tarih, bit_tarih,xstr(to), xstr(text))
+        return fn_datatable(df.to_dict('records'), get_column_dict[active_tab], 'table')
+        

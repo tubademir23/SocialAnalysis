@@ -67,3 +67,6 @@ setup(
 hostname="localhost"
 username="admin"
 password="admin"
+
+reply_list=["DiyanetTV","dibalierbas","DikenComTr","gazetesozcu", "diyanethbr","memurlarnet", "tgrthabertv", "TwiterSonSakika","vatan","stargazete","timeturk","hurhaber1","habervakti"]
+username_list=["Diyanet","DiyanetTV","DR_FatihKurt"]

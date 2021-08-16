@@ -5,3 +5,4 @@
 /pages/apps/global_sales
 /pages/apps/vgames
 /__pycache__
+./setup.py
