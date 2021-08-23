@@ -25,7 +25,7 @@ import os.path
 import glob
 from collections import Counter
 import plotly.graph_objects as go
-
+import plotly.io as pio
 from alpha_vantage.timeseries import TimeSeries
 # csv oku **************************************
 DATA_PATH=os.path.abspath('data')
@@ -64,47 +64,6 @@ empty_col=dbc.Col([
             
         ], width=1)
 
-graphsLayout=html.Div([
-    dbc.Row([
-        dbc.Col([
-            dbc.Card([
-                dbc.CardBody([
-                    dcc.Graph(id='line-chart', figure={}, config={'displayModeBar': False}),
-                ])
-            ]),
-        ], width=6),
-        dbc.Col([
-            dbc.Card([
-                dbc.CardBody([
-                    dcc.Graph(id='bar-chart', figure={}, config={'displayModeBar': False}),
-                ])
-            ]),
-        ], width=6),
-    ],className='mb-2'),
-    dbc.Row([
-        dbc.Col([
-            dbc.Card([
-                dbc.CardBody([
-                    dcc.Graph(id='TBD', figure={}),
-                ])
-            ]),
-        ], width=4),
-        dbc.Col([
-            dbc.Card([
-                dbc.CardBody([
-                    dcc.Graph(id='pie-chart', figure={}, config={'displayModeBar': False}),
-                ])
-            ]),
-        ], width=4),
-        dbc.Col([
-            dbc.Card([
-                dbc.CardBody([
-                    dcc.Graph(id='wordcloud', figure={}, config={'displayModeBar': False}),
-                ])
-            ]),
-        ], width=4),
-    ],className='mb-2')
-])
 filterLayout=html.Div([dbc.Row([
         empty_col,
 
@@ -268,13 +227,30 @@ dbc.Row([
             
         ], width=5),
     ],className='mb-2')])
-graphsLayout_=dbc.Container([ 
+graphsLayout=dbc.Container([ 
                         dbc.Row([
+                            empty_col,
                             dbc.Col([
                                 dcc.Graph(id='daily-likes', figure={},
                                           config={'displayModeBar':False})
-                            ], width=4)
-                        ]),], fluid=True)
+                            ], width=5),
+                            dbc.Col([
+                                dcc.Graph(id='daily-replies', figure={},
+                                          config={'displayModeBar':False})
+                            ], width=5),
+                        ]),
+                        dbc.Row([empty_col]),
+                        dbc.Row([
+                            empty_col,
+                            dbc.Col([
+                                dcc.Graph(id='daily-retweets', figure={},
+                                          config={'displayModeBar':False})
+                            ], width=5),
+                            dbc.Col([
+                                dcc.Graph(id='daily-total', figure={},
+                                          config={'displayModeBar':False})
+                            ], width=5),
+                        ])], fluid=True)
 
 tabsLayout=html.Div([dbc.Row([
         empty_col,
@@ -293,6 +269,17 @@ tabsLayout=html.Div([dbc.Row([
                         ], width=6)
                     ],className='mb-2')])
 xstr = lambda s: s or ""
+def get_fig(table, y_, title_):
+    return px.line( table, x='date', y=y_, title=title_+' ' +'Grafiği').update_layout(yaxis=dict(
+                                             title="",
+                                             showgrid=True,
+                                             showticklabels=True
+                                             ),
+                                             xaxis=dict(
+                                             title='Tarih',
+                                             showgrid=True,
+                                             showticklabels=True
+                                             ))
 def get_bestFile(start_suffix,bas_tarih, bit_tarih, suffix):
     for file in os.listdir(DATA_PATH):
         if file.endswith(suffix) and file.startswith(start_suffix):
@@ -315,21 +302,15 @@ def show_tweet(link):
 
 def get_tweets_df(username, bas_tarih, bit_tarih,to,text):
     file= get_newestFile("Tweets","csv")
-    df_tweets= pd.read_csv(file)
- 
-    print("3: ",len(df_tweets[df_tweets["username"]==username]))
- 
+    df_tweets= pd.read_csv(file) 
     df_filter= df_tweets[df_tweets.tweet.str.contains(text,case=False)  ]
     return df_filter
 
 def get_replies_df(username, bas_tarih, bit_tarih,to,text):
     file= get_newestFile("Replies","csv")
     df_replies= pd.read_csv(file)
-
-    df_replies= df_replies[df_replies.username.str.contains('|'.join(to))]
-    
+    df_replies= df_replies[df_replies.username.str.contains('|'.join(to))]    
     df_filter= df_replies[df_replies.tweet.str.contains(text,case=False) ]
-
     return df_filter
 
 
@@ -384,8 +365,7 @@ layout = html.Div([
     html.Div(filterLayout),
     html.Div(summaryLayout),
     html.Div(tabsLayout),
-    html.Div(graphsLayout_),
-    #html.Div(graphsLayout)
+    html.Div(graphsLayout),
 ]#, fluid=True
 )
 
@@ -404,7 +384,6 @@ layout = html.Div([
     State('reply-selector', 'value'),
     State('hashtag', 'value')]
 )
-    #,bas_tarih, bit_tarih
 
 def update_dash(n_clicks,bas_tarih, bit_tarih, username, reply, hashtag):
     date_object = date.fromisoformat(bas_tarih)
@@ -413,7 +392,7 @@ def update_dash(n_clicks,bas_tarih, bit_tarih, username, reply, hashtag):
     date_object = date.fromisoformat(bit_tarih)
     date_bit= date_object.strftime('%B %d, %Y')
 
-    print("States: {} - {} - {} / @{}, @{}, H: {}".format(n_clicks,date_bas, date_bit,username, reply, hashtag))
+    #print("States: {} - {} - {} / @{}, @{}, H: {}".format(n_clicks,date_bas, date_bit,username, reply, hashtag))
     
     dic_follow=get_followers_following(username)
     (followers_num, followings_num)=(dic_follow["followers"], dic_follow["following"])
@@ -430,56 +409,16 @@ def update_dash(n_clicks,bas_tarih, bit_tarih, username, reply, hashtag):
     
     (likes_num,replies_num, retweets_num) = (sum(df_tweets['nlikes']), sum(df_tweets['nreplies']),sum(df_tweets['nretweets']))
     totals_num=likes_num+replies_num+ retweets_num
-    print("return")
+  
     return followers_num, followings_num, tweets_num, likes_num, replies_num, retweets_num, totals_num
     
-    #return 'The input "{}" , clicked {} times'.format(value,n_clicks), followers_num, followings_num,5+n_clicks,6+n_clicks,7+n_clicks
 
 get_method_dict={"replies":get_replies_df,"repliesUsers":get_repliesUsers_df, "tweets":get_tweets_df,"mentions":get_mentions_df, "hashtags":get_hashtags_df}
 get_column_dict={"replies":["username","tweet", "date", "link","conversion_id", "hashtags","mentions"],
                 "repliesUsers":["Adı","Hashtag","Sayısı"], 
                 "tweets":["tweet", "date", "link","conversion_id", "hashtags","mentions"],
                 "mentions":["Adı","Sayısı"], "hashtags":["Adı","Hashtag","Sayısı"]}
-
-
-@app.callback(
-    Output('daily-likes', 'figure'),
-    Input('basTarih','date'),
-    Input('bitTarih','date'),
-)
-def update_graph(basTarih, bitTarih):
-    file= get_newestFile("Tweets","csv")
-    print("update_graph",file)
-    dff= pd.read_csv(file)
-    #dff=dff[dff['date']<=bitTarih & dff['date']>=basTarih]
-    dff['date_time']= dff['date']+ ' '+dff['time']
-    dff_rv = dff.iloc[::-1]
-    fig = px.line(dff_rv, x='date_time', y='likes_count', title="Beğeni Grafiği",
-                   range_y=[dff_rv['likes_count'].min(), dff_rv['likes_count'].max()],
-                   height=120).update_layout(margin=dict(t=0, r=0, l=0, b=20),
-                                             paper_bgcolor='rgba(0,0,0,0)',
-                                             plot_bgcolor='rgba(0,0,0,0)',
-                                             yaxis=dict(
-                                             title=None,
-                                             showgrid=False,
-                                             showticklabels=False
-                                             ),
-                                             xaxis=dict(
-                                             title=None,
-                                             showgrid=False,
-                                             showticklabels=False
-                                             ))
-    return fig.update_traces(fill='tozeroy',line={'color':'green'})
-    """
-    day_start = dff_rv[dff_rv['date_time'] == dff_rv['date_time'].min()]['likes_count'].values[0]
-    day_end = dff_rv[dff_rv['date_time'] == dff_rv['date_time'].max()]['likes_count'].values[0]
-
-    if day_end >= day_start:
-        return fig.update_traces(fill='tozeroy',line={'color':'green'})
-    elif day_end < day_start:
-        return fig.update_traces(fill='tozeroy',
-                             line={'color': 'red'})
-    """
+        
 @app.callback(
     Output("tab-content", "children"),
     [Input("tabs", "active_tab"),
@@ -491,11 +430,38 @@ def update_graph(basTarih, bitTarih):
     ]
 )
 def render_tab_content(active_tab, text, to, bas_tarih, bit_tarih, username):
-      
-    print("içerideyim", active_tab)
-    
     if active_tab:
         run=get_method_dict[active_tab]
         df=run(username, bas_tarih, bit_tarih,xstr(to), xstr(text))
         return fn_datatable(df.to_dict('records'), get_column_dict[active_tab], 'table')
+
+        
+dic_figs={"likes_count":["Beğeni",'red'], "replies_count":["Alıntı",'blue'], 'retweets_count':["Retweets",'green'],  'toplam_etkilesim':["Etkileşim",'purple']}
+
+@app.callback(
+    [Output('daily-likes', 'figure'),
+    Output('daily-replies', 'figure'),
+    Output('daily-retweets', 'figure'),
+    Output('daily-total', 'figure')],
+    Input('basTarih','date'),
+    Input('bitTarih','date'),
+)
+def update_line(basTarih, bitTarih):
+    file= get_newestFile("Tweets","csv")    
+    dff= pd.read_csv(file)
+    dff['date_time']= dff['date']+ ' '+dff['time']
+    dff['date']=pd.to_datetime(dff["date"])
+    dff=dff[dff['date']>=basTarih]
+    dff['month']=dff['date'].dt.month
+    dff['toplam_etkilesim']=dff['likes_count']+dff['replies_count']+ dff['retweets_count']
+    dff = dff.iloc[::-1]    
+    table = dff.groupby('date', as_index=False)[['likes_count','replies_count', 'retweets_count','toplam_etkilesim']].sum()
+    
+    table.set_index('date')
+    figs=[]
+    for key in dic_figs:
+        fig=get_fig(table,key,dic_figs[key][0] )
+        figs.append(fig.update_traces(line={'color':dic_figs[key][1] }))
+    return figs
+
         

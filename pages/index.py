@@ -39,13 +39,15 @@ app.layout = html.Div([
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
+   
     if pathname == '/apps/databaseOps':
         return databaseOps.layout
     if pathname == '/apps/mainDash':
         return mainDash.layout
     if pathname == '/apps/reports':
         return reports.layout
-    
+    if pathname == '/' or pathname == '/apps/index':
+        return mainDash.layout
     else:
         return "404 Page Error! Please choose a link"
 
