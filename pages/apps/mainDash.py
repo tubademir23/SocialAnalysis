@@ -1,4 +1,6 @@
 
+import collections
+from itertools import combinations
 from threading import local
 from dash_bootstrap_components._components.Row import Row
 import dash_html_components as html
@@ -229,27 +231,25 @@ dbc.Row([
     ],className='mb-2')])
 graphsLayout=dbc.Container([ 
                         dbc.Row([
-                            empty_col,
                             dbc.Col([
                                 dcc.Graph(id='daily-likes', figure={},
                                           config={'displayModeBar':False})
-                            ], width=5),
+                            ], width=6),
                             dbc.Col([
                                 dcc.Graph(id='daily-replies', figure={},
                                           config={'displayModeBar':False})
-                            ], width=5),
+                            ], width=6),
                         ]),
                         dbc.Row([empty_col]),
                         dbc.Row([
-                            empty_col,
                             dbc.Col([
                                 dcc.Graph(id='daily-retweets', figure={},
                                           config={'displayModeBar':False})
-                            ], width=5),
+                            ], width=6),
                             dbc.Col([
                                 dcc.Graph(id='daily-total', figure={},
                                           config={'displayModeBar':False})
-                            ], width=5),
+                            ], width=6),
                         ]),
                         dbc.Row([
                             empty_col,
@@ -455,13 +455,20 @@ def render_tab_content(active_tab, text, to, bas_tarih, bit_tarih, username):
 
         
 dic_figs={"likes_count":["Beğeni",'red'], "replies_count":["Alıntı",'blue'], 'retweets_count':["Retweets",'green'],  'toplam_etkilesim':["Etkileşim",'purple']}
-
+exclude_words = ['Şimdi','gelmek','demek','إِنْ','إِنَّ','لَـمْ','لَــمَّا','إِنَّ','لِماَ','Bu','Şu','Hep','Hiç','etmek','Etmek','Kim',
+'Gelmek','demek','bilmek','Bilmek','dilemek','Dilemek','Şu','Bunlar','Şunlar','Gibi','Öyle ki','içinde',
+'Önce','Onlar','-e, -a','dan','-dan',"-den",'den','-den -dan','Bazı','Ya da','değil',"Değil",'Söylemek',
+'Öyle ki','Dek','Veya','ve','Ya','Ya Da',"olmak", "etmek",'veya','İçin','Eğer','önce','Ey','Sen','Ben','Biz','siz',
+'biz','ben','O','için','öyle','gel','-de','sen','ey','bu','şu','o','bunlar','şunlar','onlar','Hani','İçinde','kez',
+'az','Az','çok','Çok','en','ki','içinde','Eğer','üzerine','Öyle','yapmak','Fakat','Ama','Lakin','ancak','Ancak',
+'ile','İle','-ki','bir','Başka','önce','sonra','arasında','Çok','Az','Sonra','söylemek','görmek','belki','https','http',"\"",'a','e','ı','i','o','ö','u','ü']
 @app.callback(
     [Output('daily-likes', 'figure'),
     Output('daily-replies', 'figure'),
     Output('daily-retweets', 'figure'),
     Output('daily-total', 'figure'),
-    Output('pie-chart','figure')],
+    Output('pie-chart','figure'),
+    Output('wordcloud','figure')],
     Input('basTarih','date'),
     Input('bitTarih','date'),
     [State('hashtag', 'value'),
@@ -497,5 +504,28 @@ def update_line(basTarih, bitTarih, text, to, username):
                      
     fig_pie.update_layout(margin=dict(l=20, r=20, t=30, b=20))
     figs.append(fig_pie)
+
+    dff_str = dff.tweet.astype(str)
+    for val in dff_str: 
+        val=str(val)
+        tokens = val.split()
+    for i in range(len(tokens)): 
+        tokens[i] = tokens[i].lower() 
+    comment_words=''
+    for words in tokens: 
+        comment_words = comment_words + words + ' '
+    my_wordcloud = WordCloud(
+        stopwords='./stopwords.txt',
+        background_color='white',
+        #height=275
+    ).generate(comment_words)
+    
+    fig_wordcloud = px.imshow(my_wordcloud, template='ggplot2',
+                              title="Kelime Bulutu")
+    fig_wordcloud.update_layout(margin=dict(l=10, r=10, t=25, b=10))
+    fig_wordcloud.update_xaxes(visible=False)
+    fig_wordcloud.update_yaxes(visible=False)
+
+    figs.append(fig_wordcloud)
     return figs
     
