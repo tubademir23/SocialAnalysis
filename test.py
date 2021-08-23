@@ -42,14 +42,14 @@ def test_csv(c, run):
 
 def main():
     c = twint.Config()
-    c.Username = "verified"
-    c.Limit = 20
+    c.Username = "DiyanetTV"
+   
     c.Store_object = True
 
     # Separate objects are necessary.
 
     f = twint.Config()
-    f.Username = "verified"
+    f.Username = "DiyanetTV"
     f.Limit = 20
     f.Store_object = True
     f.User_full = True
@@ -68,8 +68,8 @@ def main():
 
     for run in runs[:3]:
         if run == twint.run.Search:
-            c.Since = "2012-1-1 20:30:22"
-            c.Until = "2017-1-1"
+            c.Since = "2021-07-07 20:30:22"
+            c.Until = "2017-08-08 "
         else:
             c.Since = ""
             c.Until = ""
