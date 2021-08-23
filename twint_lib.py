@@ -24,8 +24,8 @@ def get_replies(bas_tarih, bit_tarih, to):
     twint.storage.panda.Tweets_df=[]
 
     replies = twint.Config()
-    replies.Since = bas_tarih
-    replies.Until = bit_tarih
+    #replies.Since = bas_tarih
+    #replies.Until = bit_tarih
     replies.Hide_output=True
     replies.Pandas = True
     replies.To = "@"+to
@@ -42,21 +42,26 @@ def get_replies(bas_tarih, bit_tarih, to):
     return df
 
 def get_tweets(bas_tarih, bit_tarih, username):
-   
+    
     twint.output.clean_lists
     twint.storage.panda.Tweets_df=[]
+    output_path= DATA_PATH+"\Tweets {} {}_{}.csv".format(username, bas_tarih, bit_tarih)
+    if os.path.exists(output_path):
+        os.remove(output_path)
+
+  
     c = twint.Config()
     c.Username = username
-    c.Since = bas_tarih
-    c.Until = bit_tarih
+    #c.Since = bas_tarih
+    #c.Until = bit_tarih
     c.Hide_output=True
     c.Store_object = True
     c.Store_csv = True
     c.Pandas=True
-    output_path= DATA_PATH+"\Tweets {} {}_{}.csv".format(username, bas_tarih, bit_tarih)
-    if os.path.exists(output_path):
-        os.remove(output_path)
     c.Output =output_path
-    twint.run.Search(c)    
+    twint.run.Search(c)   
+    #tweets = twint.output.tweets_object
+    #print(len(tweets)) 
     tweets = twint.storage.panda.Tweets_df
+    print(len(tweets))
     return tweets

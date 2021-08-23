@@ -24,6 +24,9 @@ import requests
 import os.path
 import glob
 from collections import Counter
+import plotly.graph_objects as go
+
+from alpha_vantage.timeseries import TimeSeries
 # csv oku **************************************
 DATA_PATH=os.path.abspath('data')
 
@@ -265,6 +268,13 @@ dbc.Row([
             
         ], width=5),
     ],className='mb-2')])
+graphsLayout_=dbc.Container([ 
+                        dbc.Row([
+                            dbc.Col([
+                                dcc.Graph(id='daily-likes', figure={},
+                                          config={'displayModeBar':False})
+                            ], width=4)
+                        ]),], fluid=True)
 
 tabsLayout=html.Div([dbc.Row([
         empty_col,
@@ -374,7 +384,7 @@ layout = html.Div([
     html.Div(filterLayout),
     html.Div(summaryLayout),
     html.Div(tabsLayout),
-
+    html.Div(graphsLayout_),
     #html.Div(graphsLayout)
 ]#, fluid=True
 )
@@ -431,6 +441,45 @@ get_column_dict={"replies":["username","tweet", "date", "link","conversion_id", 
                 "tweets":["tweet", "date", "link","conversion_id", "hashtags","mentions"],
                 "mentions":["Adı","Sayısı"], "hashtags":["Adı","Hashtag","Sayısı"]}
 
+
+@app.callback(
+    Output('daily-likes', 'figure'),
+    Input('basTarih','date'),
+    Input('bitTarih','date'),
+)
+def update_graph(basTarih, bitTarih):
+    file= get_newestFile("Tweets","csv")
+    print("update_graph",file)
+    dff= pd.read_csv(file)
+    #dff=dff[dff['date']<=bitTarih & dff['date']>=basTarih]
+    dff['date_time']= dff['date']+ ' '+dff['time']
+    dff_rv = dff.iloc[::-1]
+    fig = px.line(dff_rv, x='date_time', y='likes_count', title="Beğeni Grafiği",
+                   range_y=[dff_rv['likes_count'].min(), dff_rv['likes_count'].max()],
+                   height=120).update_layout(margin=dict(t=0, r=0, l=0, b=20),
+                                             paper_bgcolor='rgba(0,0,0,0)',
+                                             plot_bgcolor='rgba(0,0,0,0)',
+                                             yaxis=dict(
+                                             title=None,
+                                             showgrid=False,
+                                             showticklabels=False
+                                             ),
+                                             xaxis=dict(
+                                             title=None,
+                                             showgrid=False,
+                                             showticklabels=False
+                                             ))
+    return fig.update_traces(fill='tozeroy',line={'color':'green'})
+    """
+    day_start = dff_rv[dff_rv['date_time'] == dff_rv['date_time'].min()]['likes_count'].values[0]
+    day_end = dff_rv[dff_rv['date_time'] == dff_rv['date_time'].max()]['likes_count'].values[0]
+
+    if day_end >= day_start:
+        return fig.update_traces(fill='tozeroy',line={'color':'green'})
+    elif day_end < day_start:
+        return fig.update_traces(fill='tozeroy',
+                             line={'color': 'red'})
+    """
 @app.callback(
     Output("tab-content", "children"),
     [Input("tabs", "active_tab"),
