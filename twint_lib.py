@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import datetime
 import twint
 import nest_asyncio
@@ -37,8 +38,8 @@ def get_replies(bas_tarih, bit_tarih, to):
         os.remove(output_path)
     replies.Output = output_path
     twint.run.Search(replies)
-    
     df = twint.storage.panda.Tweets_df
+    print(len(df))
     return df
 
 def get_tweets(bas_tarih, bit_tarih, username):
@@ -63,5 +64,5 @@ def get_tweets(bas_tarih, bit_tarih, username):
     #tweets = twint.output.tweets_object
     #print(len(tweets)) 
     tweets = twint.storage.panda.Tweets_df
-    print(len(tweets))
+    
     return tweets

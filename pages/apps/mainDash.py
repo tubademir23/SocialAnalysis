@@ -250,6 +250,23 @@ graphsLayout=dbc.Container([
                                 dcc.Graph(id='daily-total', figure={},
                                           config={'displayModeBar':False})
                             ], width=5),
+                        ]),
+                        dbc.Row([
+                            empty_col,
+                            dbc.Col([
+                                dbc.Card([
+                                    dbc.CardBody([
+                                        dcc.Graph(id='pie-chart', figure={}, config={'displayModeBar': False}),
+                                    ])
+                                ]),
+                            ], width=5),
+                            dbc.Col([
+                                dbc.Card([
+                                    dbc.CardBody([
+                                        dcc.Graph(id='wordcloud', figure={}, config={'displayModeBar': False}),
+                                    ])
+                                ]),
+                            ], width=6)
                         ])], fluid=True)
 
 tabsLayout=html.Div([dbc.Row([
@@ -309,8 +326,9 @@ def get_tweets_df(username, bas_tarih, bit_tarih,to,text):
 def get_replies_df(username, bas_tarih, bit_tarih,to,text):
     file= get_newestFile("Replies","csv")
     df_replies= pd.read_csv(file)
-    df_replies= df_replies[df_replies.username.str.contains('|'.join(to))]    
-    df_filter= df_replies[df_replies.tweet.str.contains(text,case=False) ]
+    df_replies= df_replies[df_replies.username.str.contains('|'.join(xstr(to)))]    
+    df_filter= df_replies[df_replies.tweet.str.contains(xstr(text),case=False) ]
+    
     return df_filter
 
 
@@ -442,11 +460,15 @@ dic_figs={"likes_count":["Beğeni",'red'], "replies_count":["Alıntı",'blue'], 
     [Output('daily-likes', 'figure'),
     Output('daily-replies', 'figure'),
     Output('daily-retweets', 'figure'),
-    Output('daily-total', 'figure')],
+    Output('daily-total', 'figure'),
+    Output('pie-chart','figure')],
     Input('basTarih','date'),
     Input('bitTarih','date'),
+    [State('hashtag', 'value'),
+    State('reply-selector', 'value'),
+    State('username-selector', 'value')],
 )
-def update_line(basTarih, bitTarih):
+def update_line(basTarih, bitTarih, text, to, username):
     file= get_newestFile("Tweets","csv")    
     dff= pd.read_csv(file)
     dff['date_time']= dff['date']+ ' '+dff['time']
@@ -462,6 +484,18 @@ def update_line(basTarih, bitTarih):
     for key in dic_figs:
         fig=get_fig(table,key,dic_figs[key][0] )
         figs.append(fig.update_traces(line={'color':dic_figs[key][1] }))
+    
+    dff_replies= get_replies_df(username,basTarih,bitTarih,to,text)
+    df_group =dff_replies.groupby('username', as_index=False)['id'].count()
+    df_group.set_index('username')    
+    df_group.loc[df_group.shape[0]] = ['Diğer[1]', len(df_group[df_group['id']==1])]
+    df_group.drop(df_group[df_group['id']==1].index, inplace = True)
+    df_group.rename(columns={'id':'Sayı','username':'Kullanıcı Adı'}, inplace = True)
+    fig_pie = px.pie(df_group, names=df_group['Kullanıcı Adı'], values=df_group['Sayı'], title='Alıntı yapan kullanıcı dağılımı',
+             
+             color_discrete_sequence= px.colors.sequential.Blues)
+                     
+    fig_pie.update_layout(margin=dict(l=20, r=20, t=30, b=20))
+    figs.append(fig_pie)
     return figs
-
-        
+    
