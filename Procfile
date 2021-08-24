@@ -1,1 +1,1 @@
-web gunicorn ./dash/index:server
+web gunicorn ./pages/index:server
