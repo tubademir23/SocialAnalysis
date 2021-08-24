@@ -3,17 +3,14 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 # Connect to main app.py file
-from app import app
-from app import server
+from app import app, server
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import dash
 # Connect to your app pages
 from apps import databaseOps, reports,mainDash
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', dbc.themes.BOOTSTRAP]
-app.css.append_css({"external_url": external_stylesheets})
-server=app.server
+server=server
 navbar = dbc.NavbarSimple(
     children=[
         dbc.NavItem(dbc.NavLink('Anasayfa ', href='./index',external_link=True)),
