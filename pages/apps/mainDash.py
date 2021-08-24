@@ -17,7 +17,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath('...'))
 from jupyter_dash import JupyterDash 
 from twint_lib import get_tweets, get_followers_following, get_replies
-from app import app
+from app2 import app
 from datetime import date
 import nest_asyncio
 import dash_table

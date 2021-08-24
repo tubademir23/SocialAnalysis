@@ -3,7 +3,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 # Connect to main app.py file
-from app import app, server
+import app2
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import dash
@@ -26,13 +26,13 @@ navbar = dbc.NavbarSimple(
     expand='lg',
     sticky="top",
 )
-app.layout = html.Div([
+app2.app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     html.Div(navbar),
     html.Div(id='page-content', children=[])
 ])
 
-@app.callback(Output('page-content', 'children'),
+@app2.app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
    
@@ -49,4 +49,4 @@ def display_page(pathname):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, threaded=True)
+    app2.app.run_server(debug=True, threaded=True)
