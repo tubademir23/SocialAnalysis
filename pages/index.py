@@ -10,7 +10,6 @@ import dash
 # Connect to your app pages
 from apps import databaseOps, reports,mainDash
 
-server=server
 navbar = dbc.NavbarSimple(
     children=[
         dbc.NavItem(dbc.NavLink('Anasayfa ', href='./index',external_link=True)),
