@@ -16,7 +16,9 @@ VERSION = None
 REQUIRED = [
     'aiohttp', 'aiodns', 'beautifulsoup4', 'cchardet', 'dataclasses',
     'elasticsearch', 'pysocks', 'pandas', 'aiohttp_socks',
-    'schedule', 'geopy', 'fake-useragent', 'googletransx'
+    'schedule', 'geopy', 'fake-useragent', 'googletransx', 'nest_asyncio',
+    'geopy','fake-useragent','dash','dash_core_components','dash_bootstrap_components',
+    'wordcloud','jupyter-dash','TimeSeries','gunicorn','virtualenv'
 ]
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -60,6 +62,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
 )

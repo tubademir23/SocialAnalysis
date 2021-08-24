@@ -21,3 +21,4 @@ TimeSeries
 django
 gunicorn
 django-heroku
+plotly
