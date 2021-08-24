@@ -26,3 +26,6 @@ beautifulsoup4==4.9.3
 ipython==7.26.0
 mysql_connector_repackaged==0.3.1
 gunicorn
+./pages/app2.py
+./pages/apps/mainDash.py
+
