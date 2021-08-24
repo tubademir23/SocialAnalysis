@@ -13,7 +13,7 @@ from apps import databaseOps, reports,mainDash
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', dbc.themes.BOOTSTRAP]
 app.css.append_css({"external_url": external_stylesheets})
-
+server=app.server
 navbar = dbc.NavbarSimple(
     children=[
         dbc.NavItem(dbc.NavLink('Anasayfa ', href='./index',external_link=True)),
