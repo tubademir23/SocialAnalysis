@@ -1,1 +1,1 @@
-web gunicorn pages.run:app
+web gunicorn pages.run:server
