@@ -4,7 +4,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
-import mainDash
+#import mainDash
 app = dash.Dash(name = __name__)
 #app.config.supress_callback_exceptions = True
 server=app.server
@@ -35,8 +35,5 @@ app.layout = html.Div([
               [Input('url', 'pathname')])
 def display_page(pathname):
    
-    if pathname == '/apps/mainDash':
-        return mainDash.layout
-    else:
-        return "404 Page Error! Please choose a link"
+    return "404 Page Error! Please choose a link"
 
