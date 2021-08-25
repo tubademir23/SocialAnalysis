@@ -1,22 +1,49 @@
+import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-from flask import Flask
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
-import dash
-# Connect to your app pages
-#from apps import databaseOps, reports,mainDash
+from apps import databaseOps, reports,mainDash
 
-external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
+app = dash.Dash(name = __name__)
+#app.config.supress_callback_exceptions = True
+server=app.server
 
-#app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+navbar = dbc.NavbarSimple(
+    children=[
+        dbc.NavItem(dbc.NavLink('Anasayfa ', href='./index',external_link=True)),
+        dbc.NavItem(dbc.NavLink('Dash ', href='/apps/mainDash',external_link=True)),
+        dbc.NavItem(dbc.NavLink('Veritabanı İşlemleri ', href='/apps/databaseOps',external_link=True)),
+        dbc.NavItem(dbc.NavLink('Sorgulamalar ', href='/apps/reports',external_link=True)),
+        dbc.NavItem(dbc.NavLink('Instagram ', href='/apps/instagramScrabing',external_link=True)),
+        dbc.NavItem(dbc.NavLink('Facebook ', href='/apps/facebookScrabing',external_link=True)),
+    ],
+    brand=" DiyanetTV - Sosyal Medya Analizi ",
+    brand_href="https://www.diyanet.tv/",
+    color="primary",
+    dark=True,
+    expand='lg',
+    sticky="top",
+)
+app.layout = html.Div([
+    dcc.Location(id='url', refresh=False),
+    html.Div(navbar),
+    html.Div(id='page-content', children=[])
+])
 
-# meta_tags are required for the app layout to be mobile responsive
-app = dash.Dash(__name__, suppress_callback_exceptions=True,external_stylesheets=[dbc.themes.MATERIA, external_stylesheets],
-                meta_tags=[{'name': 'viewport',
-                            'content': 'width=device-width, initial-scale=1.0'}]
-                )
-server = app.server
-
+@app.callback(Output('page-content', 'children'),
+              [Input('url', 'pathname')])
+def display_page(pathname):
+   
+    if pathname == '/apps/databaseOps':
+        return databaseOps.layout
+    if pathname == '/apps/mainDash':
+        return mainDash.layout
+    if pathname == '/apps/reports':
+        return reports.layout
+    if pathname == '/' or pathname == '/apps/index':
+        return mainDash.layout
+    else:
+        return "404 Page Error! Please choose a link"
 
