@@ -3,12 +3,12 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 from flask import Flask
-import os
+import app2
 
-app = dash.Dash(name = __name__)
+#app = dash.Dash(name = __name__)
 #app.config.supress_callback_exceptions = True
-server=app.server
-app.layout = html.Div(children=[
+server=app2.app.server
+app2.app.layout = html.Div(children=[
     html.H1(children='Hello Dash'),
     html.Div(children='''
         Dash: A web application framework for Python.
@@ -29,7 +29,7 @@ app.layout = html.Div(children=[
     html.Div(id='my-div')
 ])
 
-@app.callback(
+@app2.app.callback(
     Output(component_id='my-div', component_property='children'),
     [Input(component_id='my-id', component_property='value')]
 )
@@ -37,4 +37,4 @@ def update_output_div(input_value):
     return 'You\'ve entered "{}"'.format(input_value)
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app2.app.run_server(debug=True)
