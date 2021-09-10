@@ -1,34 +1,30 @@
 
-import collections
 from itertools import combinations
 from threading import local
 from dash_bootstrap_components._components.Row import Row
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Output, Input, State
-import dash
 import dash_bootstrap_components as dbc
-from numpy import dtype  # pip install dash-bootstrap-components
 import plotly.express as px              # pip install plotly
 import pandas as pd                      # pip install pandas
 from datetime import datetime, timedelta
 from wordcloud import WordCloud          # pip install wordcloud
 import sys, os
-sys.path.insert(0, os.path.abspath('...'))
-from jupyter_dash import JupyterDash 
+sys.path.insert(0, os.path.abspath('.'))
 from twint_lib import get_tweets, get_followers_following, get_replies
-from app2 import app
+from app import app
 from datetime import date
 import nest_asyncio
 import dash_table
 from IPython.display import HTML, display
 import requests
 import os.path
-import glob
 from collections import Counter
 import plotly.graph_objects as go
 import plotly.io as pio
 from alpha_vantage.timeseries import TimeSeries
+import asyncio
 # csv oku **************************************
 DATA_PATH=os.path.abspath('data')
 
@@ -304,12 +300,20 @@ def get_bestFile(start_suffix,bas_tarih, bit_tarih, suffix):
             (sf_bas_tarih, sf_bit_tarih)= name[0].split()[2].split("_")
             if sf_bas_tarih<=bas_tarih and sf_bit_tarih>= bit_tarih:
                 return file
-    
+
+"""
 def get_newestFile(start_suffix, suffix):
-    files = glob.glob(DATA_PATH+"\*"+start_suffix+"*"+ suffix)
+ 
+    path=DATA_PATH+"\*"+start_suffix+"*"+ suffix
+    print(path)
+    files = glob.glob(path, recursive=True)
+    print("files")
+    print(files)
+    print("max")
     max_file = max(files, key=os.path.getctime)         
     return max_file
 
+"""
 def show_tweet(link):
     '''Display the contents of a tweet. '''
     url = 'https://publish.twitter.com/oembed?url=%s' % link
@@ -318,13 +322,13 @@ def show_tweet(link):
     display(HTML(html))
 
 def get_tweets_df(username, bas_tarih, bit_tarih,to,text):
-    file= get_newestFile("Tweets","csv")
+    file= DATA_PATH+"\Tweets {} {}_{}.csv".format(username, bas_tarih, bit_tarih) 
     df_tweets= pd.read_csv(file) 
     df_filter= df_tweets[df_tweets.tweet.str.contains(text,case=False)  ]
     return df_filter
 
 def get_replies_df(username, bas_tarih, bit_tarih,to,text):
-    file= get_newestFile("Replies","csv")
+    file= DATA_PATH+"\Replies {} {}_{}.csv".format(to, bas_tarih, bit_tarih)
     df_replies= pd.read_csv(file)
     df_replies= df_replies[df_replies.username.str.contains('|'.join(xstr(to)))]    
     df_filter= df_replies[df_replies.tweet.str.contains(xstr(text),case=False) ]
@@ -403,25 +407,28 @@ layout = html.Div([
     State('hashtag', 'value')]
 )
 
-def update_dash(n_clicks,bas_tarih, bit_tarih, username, reply, hashtag):
+async def update_dash(n_clicks,bas_tarih, bit_tarih, username, reply, hashtag):
     date_object = date.fromisoformat(bas_tarih)
     date_bas= date_object.strftime('%B %d, %Y')
 
     date_object = date.fromisoformat(bit_tarih)
     date_bit= date_object.strftime('%B %d, %Y')
 
-    #print("States: {} - {} - {} / @{}, @{}, H: {}".format(n_clicks,date_bas, date_bit,username, reply, hashtag))
+    print("States: {} - {} - {} / @{}, @{}, H: {}".format(n_clicks,date_bas, date_bit,username, reply, hashtag))
+   
     
-    dic_follow=get_followers_following(username)
-    (followers_num, followings_num)=(dic_follow["followers"], dic_follow["following"])
+    # tweets
+    df_list= await get_tweets(bas_tarih, bit_tarih,username)
+    tweets_num = len(df_list)
+
     nest_asyncio.apply()
-    # replies
+     # replies
     df_replies= get_replies(bas_tarih, bit_tarih,username)
     replies_num = len(df_replies)
-    # tweets
+
     nest_asyncio.apply()
-    df_list= get_tweets(bas_tarih, bit_tarih,username)
-    tweets_num = len(df_list)
+    dic_follow= get_followers_following(username)
+    (followers_num, followings_num)=(dic_follow["followers"], dic_follow["following"])
 
     df_tweets = pd.DataFrame(df_list)
     
@@ -476,7 +483,8 @@ exclude_words = ['Şimdi','gelmek','demek','إِنْ','إِنَّ','لَـمْ',
     State('username-selector', 'value')],
 )
 def update_line(basTarih, bitTarih, text, to, username):
-    file= get_newestFile("Tweets","csv")    
+    print("update line dayım")
+    file= DATA_PATH+"\Tweets {} {}_{}.csv".format(username, basTarih, bitTarih)
     dff= pd.read_csv(file)
     dff['date_time']= dff['date']+ ' '+dff['time']
     dff['date']=pd.to_datetime(dff["date"])
@@ -485,7 +493,7 @@ def update_line(basTarih, bitTarih, text, to, username):
     dff['toplam_etkilesim']=dff['likes_count']+dff['replies_count']+ dff['retweets_count']
     dff = dff.iloc[::-1]    
     table = dff.groupby('date', as_index=False)[['likes_count','replies_count', 'retweets_count','toplam_etkilesim']].sum()
-    
+    print(table)
     table.set_index('date')
     figs=[]
     for key in dic_figs:
@@ -498,9 +506,7 @@ def update_line(basTarih, bitTarih, text, to, username):
     df_group.loc[df_group.shape[0]] = ['Diğer[1]', len(df_group[df_group['id']==1])]
     df_group.drop(df_group[df_group['id']==1].index, inplace = True)
     df_group.rename(columns={'id':'Sayı','username':'Kullanıcı Adı'}, inplace = True)
-    fig_pie = px.pie(df_group, names=df_group['Kullanıcı Adı'], values=df_group['Sayı'], title='Alıntı yapan kullanıcı dağılımı',
-             
-             color_discrete_sequence= px.colors.sequential.Blues)
+    fig_pie = px.pie(df_group, names=df_group['Kullanıcı Adı'], values=df_group['Sayı'], title='Alıntı yapan kullanıcı dağılımı',color_discrete_sequence= px.colors.sequential.Blues)
                      
     fig_pie.update_layout(margin=dict(l=20, r=20, t=30, b=20))
     figs.append(fig_pie)

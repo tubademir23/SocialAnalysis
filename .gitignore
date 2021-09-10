@@ -1,9 +1,9 @@
 /data
 /DiyanetTV
 /dash
-/pages/__pycache__
-/pages/apps/global_sales
-/pages/apps/vgames
 /__pycache__
+/apps/global_sales
+/apps/vgames
+/apps/__pycache__
 ./setup.py
-/pages/apps/stopwords
+/apps/stopwords

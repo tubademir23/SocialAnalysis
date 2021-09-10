@@ -4,7 +4,7 @@ from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
 import pathlib
-from app2 import app
+from app import app
 
 # get relative data folder
 PATH = pathlib.Path(__file__).parent
